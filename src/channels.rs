@@ -42,13 +42,19 @@ pub fn send_ten_processing_responses_and_then_error(
             CommandStatus::Processing,
             "Not done yet".to_string(),
         );
+
+        println!("Sending response: {:?}", processing_response);
         channel.write_message(&processing_response);
+
         sleep(Duration::from_secs(1));
     }
+    
     let error_response = CommandResponse::new(
         format!("error response"),
         CommandStatus::Error,
         "I am done and I have failed".to_string(),
     );
+
+    println!("Sending response: {:?}", error_response);
     channel.write_message(&error_response);
 }

@@ -3,17 +3,22 @@ mod command;
 mod copy_pasted_from_sozu;
 mod socket;
 
-use anyhow::{bail, Context};
 use channels::{
     create_receiving_channel, create_sending_channel, send_ten_processing_responses_and_then_error,
 };
 use command::{CommandRequest, CommandResponse, CommandStatus};
 use copy_pasted_from_sozu::channel::Channel;
+use socket::create_socket;
+
+use anyhow::{bail, Context};
+use mio::net::UnixStream;
 
 fn main() -> anyhow::Result<()> {
     println!("Hello, world!");
 
     let socket_path = "socket";
+
+    let _unix_socket = create_socket(socket_path);
 
     let mut sending_channel = create_sending_channel(socket_path)?;
 
@@ -28,13 +33,15 @@ fn main() -> anyhow::Result<()> {
     });
 
     println!("hi!");
-    sender.join().expect("the thread crashed");
-    receiver.join().expect("the thread crashed");
+    sender.join().expect("the sending thread crashed");
+    receiver.join().expect("the receiving thread crashed");
     Ok(())
 }
 
 fn receive_messages(mut channel: Channel<CommandRequest, CommandResponse>) {
+    println!("Listening…");
     while let Some(response) = channel.read_message() {
-        println!("{:?}", response);
+        println!("Received response: {:?}", response);
     }
+    println!("received_nothing…");
 }

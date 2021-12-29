@@ -20,15 +20,15 @@ The channel looks like this:
 
 ```rust
 pub struct Channel<Tx, Rx> {
-    pub sock: mio::net::UnixStream,
-    front_buf: crate::buffer::growable::Buffer,
-    pub back_buf: crate::buffer::growable::Buffer,
-    max_buffer_size: usize,
-    pub readiness: crate::ready::Ready,
-    pub interest: crate::ready::Ready,
-    blocking: bool,
-    phantom_tx: std::marker::PhantomData<Tx>,
-    phantom_rx: std::marker::PhantomData<Rx>,
+    pub sock:               mio::net::UnixStream,
+        front_buf:          crate::buffer::growable::Buffer,
+    pub back_buf:           crate::buffer::growable::Buffer,
+        max_buffer_size:    usize,
+    pub readiness:          crate::ready::Ready,
+    pub interest:           crate::ready::Ready,
+        blocking:           bool,
+        phantom_tx:         std::marker::PhantomData<Tx>,
+        phantom_rx:         std::marker::PhantomData<Rx>,
 }
 
 // /src/buffer/growable.rs
@@ -73,10 +73,6 @@ All this with a timeout.
 
 ## How to run
 
-Be sure to have netcat installed and do in a separate terminal
-
-    nc -lkU socket
-
-To create the socket and listen to it. Then:
+The unix socket is created each time. To create the socket and listen to it. Then:
 
     cargo run

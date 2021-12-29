@@ -60,7 +60,7 @@ while Some(message) = channel.read_message() {
         Status::Processing => {
             println!("processing: {}", message.message);
             // wait for the next message
-        }, 
+        },
         Status::Ok => {
             println!("Success: {}", message.message);
             break;
@@ -70,3 +70,13 @@ while Some(message) = channel.read_message() {
 ```
 
 All this with a timeout.
+
+## How to run
+
+Be sure to have netcat installed and do in a separate terminal
+
+    nc -lkU socket
+
+To create the socket and listen to it. Then:
+
+    cargo run

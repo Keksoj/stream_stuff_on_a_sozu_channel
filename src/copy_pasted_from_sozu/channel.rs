@@ -15,9 +15,9 @@ use std::os::unix::net;
 use std::str::from_utf8;
 use std::time::Duration;
 
-// added ::lib here
-use crate::lib::buffer::growable::Buffer;
-use crate::lib::ready::Ready;
+// added ::copy_pasted_from_sozu here
+use crate::copy_pasted_from_sozu::buffer::growable::Buffer;
+use crate::copy_pasted_from_sozu::ready::Ready;
 
 #[derive(Debug, PartialEq)]
 pub enum ConnError {

@@ -73,6 +73,8 @@ All this with a timeout.
 
 ## How to run
 
-The unix socket is created each time. To create the socket and listen to it. Then:
+In two separate terminals:
 
-    cargo run
+    cargo run --bin send
+
+    cargo run --bin receive

@@ -8,11 +8,9 @@ use stream_stuff_on_a_sozu_channel::{
 use std::{thread::sleep, time::Duration};
 
 fn main() -> anyhow::Result<()> {
-    println!("Hello, world!");
-
     let socket_path = "socket";
 
-    let _unix_socket = create_socket(socket_path);
+    create_socket(socket_path)?;
 
     let mut sending_channel = create_sending_channel(socket_path)?;
 

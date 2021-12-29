@@ -6,9 +6,10 @@ use std::path::PathBuf;
 pub fn create_socket(command_socket_path: &str) -> anyhow::Result<()> {
     let address = PathBuf::from(command_socket_path);
 
-    println!("{:?}", address);
-
-    println!("Checking for the presence of a unix socket");
+    println!(
+        "Checking for the presence of a unix socket at path {:?}",
+        address
+    );
     if fs::metadata(&address).is_ok() {
         println!("There is one already!");
     } else {

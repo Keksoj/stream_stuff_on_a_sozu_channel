@@ -23,7 +23,18 @@ fn main() -> anyhow::Result<()> {
         send_ten_processing_responses_and_then_error(sending_channel);
     });
 
+    let receiver = std::thread::spawn(move || {
+        receive_messages(receiving_channel);
+    });
+
     println!("hi!");
     sender.join().expect("the thread crashed");
+    receiver.join().expect("the thread crashed");
     Ok(())
+}
+
+fn receive_messages(mut channel: Channel<CommandRequest, CommandResponse>) {
+    while let Some(response) = channel.read_message() {
+        println!("{:?}", response);
+    }
 }

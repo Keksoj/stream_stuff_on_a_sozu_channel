@@ -1,0 +1,72 @@
+# Stream stuff on a Sōzu channel
+
+A number of [Sōzu](https://github.com/sozu-proxy/sozu) issues I work on have to deal with the CLI, and it's mostly a timeout thing.
+
+After [removing the existing macros](https://github.com/sozu-proxy/sozu/pull/724) the timeouts still fail miserably.
+I see myself forced to dig into the inner workings of the channel Sōzu works on.
+The Channel is based on [mio](https://crates.io/crates/mio), a low-level asynchronous I/O library.
+
+## What I work on
+
+I copy-pasted those files that define the working of a Sōzu channel
+
+-   `/command/src/channel.rs`
+-   `/command/src/ready.rs`
+-   `/command/buffer/mod.rs`
+-   `/command/buffer/growable.rs`
+-   `/command/buffer/fixed.rs`
+
+The channel looks like this:
+
+```rust
+pub struct Channel<Tx, Rx> {
+    pub sock: mio::net::UnixStream,
+    front_buf: crate::buffer::growable::Buffer,
+    pub back_buf: crate::buffer::growable::Buffer,
+    max_buffer_size: usize,
+    pub readiness: crate::ready::Ready,
+    pub interest: crate::ready::Ready,
+    blocking: bool,
+    phantom_tx: std::marker::PhantomData<Tx>,
+    phantom_rx: std::marker::PhantomData<Rx>,
+}
+
+// /src/buffer/growable.rs
+pub struct Buffer {
+    memory: Vec<u8>,
+    capacity: usize,
+    position: usize,
+    end: usize,
+}
+
+// /src/ready.rs
+pub struct Ready(pub u16);
+
+const READABLE: u16 = 0b00001;
+const WRITABLE: u16 = 0b00010;
+const ERROR: u16 = 0b00100;
+const HUP: u16 = 0b01000;
+```
+
+## The goal
+
+What I ultimately want to do is to read several messages until the business logic is done.
+In pseudo-rust:
+
+```rust
+while Some(message) = channel.read_message() {
+    match message.status {
+        Status::Error => break,
+        Status::Processing => {
+            println!("processing: {}", message.message);
+            // wait for the next message
+        }, 
+        Status::Ok => {
+            println!("Success: {}", message.message);
+            break;
+        }
+    }
+}
+```
+
+All this with a timeout.

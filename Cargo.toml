@@ -1,0 +1,16 @@
+[package]
+name = "stream_stuff_on_a_sozu_channel"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mio = { version = "^0.8", features = [ "os-poll", "net" ] }
+serde = "^1.0.34"
+serde_json = "^1.0.34"
+serde_derive = "^1.0.34"
+poule = "0.3"
+trailer = {version = "^0.1.2" }
+pool = "^0.1"
+anyhow = "^1.0.42"

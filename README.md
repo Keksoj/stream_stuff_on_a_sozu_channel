@@ -12,9 +12,9 @@ I copy-pasted those files that define the working of a Sōzu channel
 
 -   `/command/src/channel.rs`
 -   `/command/src/ready.rs`
--   `/command/buffer/mod.rs`
--   `/command/buffer/growable.rs`
--   `/command/buffer/fixed.rs`
+-   `/command/src/buffer/mod.rs`
+-   `/command/src/buffer/growable.rs`
+-   `/command/src/buffer/fixed.rs`
 
 The channel looks like this:
 
@@ -71,7 +71,7 @@ while Some(message) = channel.read_message() {
 
 All this with a timeout.
 
-## What is a file descriptor ?
+## What is a file descriptor ?
 
     cargo run --bin rawfd
 
@@ -85,7 +85,7 @@ In two separate terminals:
 
     cargo run --bin receive
 
-## Why do I gate this error every time?
+## Why do I get this error every time?
 
 Even when setting socket permissions to `777`, I can't connect to it:
 

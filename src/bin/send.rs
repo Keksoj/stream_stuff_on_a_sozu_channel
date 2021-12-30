@@ -1,16 +1,24 @@
+use std::{
+    io::{Read, Write},
+    os::unix::net::UnixStream,
+    thread::sleep,
+    time::Duration,
+};
+
 use stream_stuff_on_a_sozu_channel::{
     channels::{create_receiving_channel, create_sending_channel},
     command::{CommandRequest, CommandResponse, CommandStatus},
     copy_pasted_from_sozu::channel::Channel,
-    socket::create_socket,
+    socket::{Socket, SocketBuilder},
 };
-
-use std::{thread::sleep, time::Duration};
 
 fn main() -> anyhow::Result<()> {
     let socket_path = "socket";
 
-    create_socket(socket_path)?;
+    let _socket = SocketBuilder::new()
+        .with_path(socket_path)?
+        .with_permissions(777)?
+        .build()?;
 
     let mut sending_channel = create_sending_channel(socket_path)?;
 

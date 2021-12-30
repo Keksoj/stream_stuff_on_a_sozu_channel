@@ -71,6 +71,12 @@ while Some(message) = channel.read_message() {
 
 All this with a timeout.
 
+## What is a file descriptor ?
+
+    cargo run --bin rawfd
+
+It turns out if we want the raw file descriptor of a file we have to use `std::os::unix::io::AsRawFd`.
+
 ## How to run
 
 In two separate terminals:
@@ -78,3 +84,14 @@ In two separate terminals:
     cargo run --bin send
 
     cargo run --bin receive
+
+## Why do I gate this error every time?
+
+Even when setting socket permissions to `777`, I can't connect to it:
+
+```
+Error: Can not connect to socket
+
+Caused by:
+    Permission denied (os error 13)
+```

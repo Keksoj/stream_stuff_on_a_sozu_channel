@@ -1,7 +1,7 @@
-use crate::command::{CommandRequest, CommandResponse, CommandStatus};
+use crate::command::{CommandRequest, CommandResponse};
 use crate::copy_pasted_from_sozu::channel::Channel;
 
-use anyhow::{bail, Context};
+use anyhow::Context;
 
 pub fn create_receiving_channel(
     command_socket_path: &str,

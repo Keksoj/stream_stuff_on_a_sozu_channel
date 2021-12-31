@@ -10,12 +10,14 @@ fn main() -> anyhow::Result<()> {
 
     let socket_path = "socket";
 
-    let _socket = SocketBuilder::new()
-        .with_path(socket_path)?
-        .with_permissions(777)?
-        .build()?;
 
-    let receiving_channel = create_receiving_channel(socket_path)?;
+
+    let mut receiving_channel = create_receiving_channel(
+        socket_path,
+        false, // non-blocking
+    )?;
+
+    receive_messages(receiving_channel);
 
     Ok(())
 }

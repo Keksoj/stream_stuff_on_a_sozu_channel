@@ -5,6 +5,7 @@ use anyhow::Context;
 
 pub fn create_receiving_channel(
     command_socket_path: &str,
+    non_blocking: bool,
 ) -> anyhow::Result<Channel<CommandRequest, CommandResponse>> {
     println!("Creating channel on socket `{}`", command_socket_path);
     let mut channel = Channel::from_path(
@@ -14,7 +15,7 @@ pub fn create_receiving_channel(
     )
     .with_context(|| "Could not create Channel from the given path")?;
 
-    channel.set_nonblocking(false);
+    channel.set_nonblocking(non_blocking);
     Ok(channel)
 }
 

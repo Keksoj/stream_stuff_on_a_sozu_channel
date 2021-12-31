@@ -18,9 +18,10 @@ fn main() -> anyhow::Result<()> {
 
     let socket = SocketBuilder::new()
         .with_path(path)?
-        .with_permissions(777)?
+        .with_permissions(0o600)?
         .build()?;
 
+    /*
     let mut stream = UnixStream::connect(path).context("Can not connect to socket")?;
 
     stream.write_all(b"hello world")?;
@@ -31,6 +32,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("{}", response);
 
+    */
     Ok(())
 }
 

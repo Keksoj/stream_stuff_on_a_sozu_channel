@@ -15,11 +15,6 @@ use stream_stuff_on_a_sozu_channel::{
 fn main() -> anyhow::Result<()> {
     let socket_path = "socket";
 
-    let _socket = SocketBuilder::new()
-        .with_path(socket_path)?
-        .with_permissions(777)?
-        .build()?;
-
     let mut sending_channel = create_sending_channel(socket_path)?;
 
     send_ten_processing_responses_and_then_error(sending_channel);

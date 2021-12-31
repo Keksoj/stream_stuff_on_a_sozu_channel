@@ -2,14 +2,12 @@
 use std::{
     fs::File,
     io::{Read, Write},
-    os::unix::{
-        io::AsRawFd,
-        net::{UnixListener, UnixStream},
-    },
+    os::unix::{io::AsRawFd, net::UnixListener},
     path::Path,
 };
 
 use anyhow::Context;
+use mio::net::UnixStream;
 
 use stream_stuff_on_a_sozu_channel::socket::{Socket, SocketBuilder};
 
@@ -21,29 +19,20 @@ fn main() -> anyhow::Result<()> {
         .with_permissions(0o600)?
         .build()?;
 
-    /*
     let mut stream = UnixStream::connect(path).context("Can not connect to socket")?;
 
     stream.write_all(b"hello world")?;
 
     let mut response = String::new();
 
-    stream.read_to_string(&mut response)?;
+    // stream.set_read_timeout(Some(std::time::Duration::from_secs(2)));
+    stream
+        .read_to_string(&mut response)
+        .context("No message read")?;
 
     println!("{}", response);
 
-    */
     Ok(())
 }
 
-fn create_socket_and_find_raw_fd(socket_path: &str) -> anyhow::Result<()> {
-    println!("Let's create a socket at path {:?}", socket_path);
 
-    let unix_socket = UnixListener::bind(socket_path).context("Could not create unix socket")?;
-
-    let raw_fd = unix_socket.as_raw_fd();
-
-    println!("Here is its raw file descriptor: {:?}", raw_fd);
-
-    Ok(())
-}

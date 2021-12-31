@@ -54,7 +54,7 @@ What I ultimately want to do is to read several messages until the business logi
 In pseudo-rust:
 
 ```rust
-while Some(message) = channel.read_message() {
+while Some(message) = channel.read_message_with_timeout(Duration::from_secs(2)) {
     match message.status {
         Status::Error => break,
         Status::Processing => {
@@ -68,8 +68,6 @@ while Some(message) = channel.read_message() {
     }
 }
 ```
-
-All this with a timeout.
 
 ## What is a file descriptor ?
 

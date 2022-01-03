@@ -2,7 +2,7 @@
 use stream_stuff_on_a_sozu_channel::socket::SocketBuilder;
 
 fn main() -> anyhow::Result<()> {
-    let path = "./socket";
+    let path = "socket";
 
     let _socket = SocketBuilder::new()
         .with_path(path)?

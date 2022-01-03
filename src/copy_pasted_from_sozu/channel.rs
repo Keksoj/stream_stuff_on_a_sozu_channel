@@ -14,6 +14,7 @@ use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 use std::os::unix::net;
 use std::str::from_utf8;
 use std::time::Duration;
+use anyhow::Context;
 
 // added ::copy_pasted_from_sozu here
 use crate::copy_pasted_from_sozu::buffer::growable::Buffer;
@@ -45,7 +46,9 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
         buffer_size: usize,
         max_buffer_size: usize,
     ) -> Result<Channel<Tx, Rx>, io::Error> {
-        UnixStream::connect(path).map(|stream| Channel::new(stream, buffer_size, max_buffer_size))
+        UnixStream::connect(path)
+        // .context("Can not connect to unix socket")
+        .map(|stream| Channel::new(stream, buffer_size, max_buffer_size))
     }
 
     pub fn new(sock: UnixStream, buffer_size: usize, max_buffer_size: usize) -> Channel<Tx, Rx> {

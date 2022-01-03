@@ -9,13 +9,13 @@ use anyhow::{bail, Context};
 #[derive(Debug)]
 pub struct Socket {
     pub path: String,
-    pub socket: UnixListener,
+    pub listener: UnixListener,
     pub permissions: Option<Permissions>,
 }
 
 pub struct SocketBuilder {
     path: Option<String>,
-    socket: Option<UnixListener>,
+    listener: Option<UnixListener>,
     permissions: Option<Permissions>,
 }
 
@@ -23,7 +23,7 @@ impl SocketBuilder {
     pub fn new() -> Self {
         Self {
             path: None,
-            socket: None,
+            listener: None,
             permissions: None,
         }
     }
@@ -34,7 +34,7 @@ impl SocketBuilder {
     {
         Ok(Self {
             path: Some(path.to_string()),
-            socket: self.socket,
+            listener: self.listener,
             permissions: self.permissions,
         })
     }
@@ -47,7 +47,7 @@ impl SocketBuilder {
 
         Ok(Self {
             path: self.path,
-            socket: self.socket,
+            listener: self.listener,
             permissions: Some(permissions),
         })
     }
@@ -83,7 +83,7 @@ impl SocketBuilder {
 
         let socket = Socket {
             path: cloned_path,
-            socket: unix_listener,
+            listener: unix_listener,
             permissions: self.permissions,
         };
 

@@ -1,3 +1,4 @@
+// create a UnixStream that connects to the unix_listener of the receiver (=the server)
 use std::{
     io::{Read, Write},
     os::unix::net::UnixStream,
@@ -15,7 +16,7 @@ use stream_stuff_on_a_sozu_channel::{
 fn main() -> anyhow::Result<()> {
     let socket_path = "socket";
 
-    let mut sending_channel = create_sending_channel(socket_path)?;
+    let mut sending_channel = create_sending_channel(socket_path, false)?;
 
     send_ten_processing_responses_and_then_error(sending_channel);
 

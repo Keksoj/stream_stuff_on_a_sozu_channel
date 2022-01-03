@@ -69,6 +69,8 @@ while Some(message) = channel.read_message_with_timeout(Duration::from_secs(2)) 
 }
 ```
 
+To implement the timeout, I need non-blocking channels.
+
 ## What is a file descriptor ?
 
     cargo run --bin rawfd
@@ -77,11 +79,13 @@ It turns out if we want the raw file descriptor of a file we have to use `std::o
 
 ## How to run
 
-In two separate terminals:
+In two separate terminals, run first:
 
-    cargo run --bin send
+    cargo run --bin server
 
-    cargo run --bin receive
+and then:
+
+    cargo run --bin client
 
 ## Why do I get this error every time?
 

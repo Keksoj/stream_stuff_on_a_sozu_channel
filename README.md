@@ -86,14 +86,3 @@ In two separate terminals, run first:
 and then:
 
     cargo run --bin client
-
-## Why do I get this error every time?
-
-Even when setting socket permissions to `777`, I can't connect to it:
-
-```
-Error: Can not connect to socket
-
-Caused by:
-    Permission denied (os error 13)
-```

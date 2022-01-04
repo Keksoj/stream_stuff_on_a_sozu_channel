@@ -1,3 +1,16 @@
+## Why do I get this error every time?
+
+Even when setting socket permissions to `777`, I can't connect to it:
+
+```
+Error: Can not connect to socket
+
+Caused by:
+    Permission denied (os error 13)
+```
+
+It turns out the permissions had to be given in octal, so `0o600` (600 is plenty).
+
 # Work it the verbose way first
 
 Instead of taming the channels head-on, let's try and get it to work using only sockets.

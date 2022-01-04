@@ -94,13 +94,19 @@ fn handle_stream(mut stream: UnixStream) -> anyhow::Result<()> {
 **client side**:
 
 ```rust
-// within main
+fn main() {
+
+    // ...
 
     let unix_stream =
         UnixStream::connect(socket_path).context("Could not connect to unix socket")?;
 
     stream.write(request_as_bytes)?;
-//
+}
 ```
 
 This prints the request on the server.
+
+## Accept and deserialize a request
+
+That's the next step to greatness: once we accept a request on the server, send a bunch of responses back.

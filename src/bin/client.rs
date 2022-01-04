@@ -32,7 +32,10 @@ fn main() -> anyhow::Result<()> {
 fn write_request_onto_stream(mut stream: UnixStream) -> anyhow::Result<()> {
     let request = CommandRequest::new("My-urgent-request".to_string(), None);
 
-    let request_as_string = format!("{:?}", request);
+    let request_as_string = request
+        .to_serialized_string()
+        .context("failed at serializing request")?;
+
     let request_as_bytes = request_as_string.as_bytes();
 
     stream

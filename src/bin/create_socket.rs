@@ -5,8 +5,9 @@ fn main() -> anyhow::Result<()> {
     let path = "socket";
 
     let _socket = SocketBuilder::new()
-        .with_path(path)?
-        .with_permissions(0o700)?
+        .with_path(path)
+        .with_permissions(0o700)
+        .nonblocking(true)
         .build()?;
 
     Ok(())

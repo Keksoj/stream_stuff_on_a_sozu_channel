@@ -1,6 +1,10 @@
 use std::{
     fs::{metadata, remove_file, set_permissions, Permissions},
-    os::unix::{fs::PermissionsExt, net::UnixListener},
+    os::unix::{
+        fs::PermissionsExt,
+        io::{AsRawFd, FromRawFd, RawFd},
+        net::{UnixListener, UnixStream},
+    },
     path::PathBuf,
 };
 
@@ -10,12 +14,24 @@ use anyhow::{bail, Context};
 pub struct Socket {
     pub path: String,
     pub listener: UnixListener,
+    pub nonblocking: bool,
     pub permissions: Option<Permissions>,
+}
+
+impl Socket {
+    pub fn get_raw_fd(&self) -> RawFd {
+        self.listener.as_raw_fd()
+    }
+
+    pub fn set_nonblocking(&mut self, nonblocking: bool) {
+        self.listener.set_nonblocking(nonblocking);
+    }
 }
 
 pub struct SocketBuilder {
     path: Option<String>,
     listener: Option<UnixListener>,
+    nonblocking: Option<bool>,
     permissions: Option<Permissions>,
 }
 
@@ -24,32 +40,44 @@ impl SocketBuilder {
         Self {
             path: None,
             listener: None,
+            nonblocking: None,
             permissions: None,
         }
     }
 
-    pub fn with_path<T>(self, path: T) -> anyhow::Result<Self>
+    pub fn with_path<T>(self, path: T) -> Self
     where
         T: ToString,
     {
-        Ok(Self {
+        Self {
             path: Some(path.to_string()),
             listener: self.listener,
+            nonblocking: self.nonblocking,
             permissions: self.permissions,
-        })
+        }
+    }
+
+    pub fn nonblocking(self, nonblocking: bool) -> Self {
+        Self {
+            path: self.path,
+            listener: self.listener,
+            nonblocking: Some(nonblocking),
+            permissions: self.permissions,
+        }
     }
 
     /// ex: "0o600"
-    pub fn with_permissions(self, permissions: u32) -> anyhow::Result<Self> {
+    pub fn with_permissions(self, permissions: u32) -> Self {
         let permissions = Permissions::from_mode(permissions);
 
         println!("Permissions are set.");
 
-        Ok(Self {
+        Self {
             path: self.path,
             listener: self.listener,
+            nonblocking: self.nonblocking,
             permissions: Some(permissions),
-        })
+        }
     }
 
     pub fn build(self) -> anyhow::Result<Socket> {
@@ -72,7 +100,8 @@ impl SocketBuilder {
                 .with_context(|| format!("could not delete previous socket at {:?}", addr))?;
         }
 
-        let unix_listener = UnixListener::bind(&addr).context("could not create unix socket")?;
+        let mut unix_listener =
+            UnixListener::bind(&addr).context("could not create unix socket")?;
 
         if self.permissions.is_some() {
             set_permissions(&addr, self.permissions.clone().unwrap())
@@ -81,9 +110,20 @@ impl SocketBuilder {
             println!("Warning, no permissions set.")
         }
 
+        // if no value is set, the socket defaults to blocking
+        let nonblocking = match self.nonblocking {
+            Some(bool_value) => bool_value,
+            None => false,
+        };
+
+        unix_listener
+            .set_nonblocking(nonblocking)
+            .context("Could not set unix listener to blocking or unblocking")?;
+
         let socket = Socket {
             path: cloned_path,
             listener: unix_listener,
+            nonblocking,
             permissions: self.permissions,
         };
 

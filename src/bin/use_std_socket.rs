@@ -18,17 +18,23 @@ fn main() -> anyhow::Result<()> {
 
     // my custom socket builder
     let socket = SocketBuilder::new()
-        .with_path(path)?
-        .with_permissions(0o700)?
+        .with_path(path)
+        .with_permissions(0o700)
+        .nonblocking(true)
         .build()?;
 
     let mut stream = UnixStream::connect(path).context("Can not connect to socket")?;
 
-    stream.write_all(b"hello world")?;
+    stream
+        .write_all(b"hello world")
+        .context("Could not write on unix stream")?;
 
     let mut response = String::new();
 
-    stream.set_read_timeout(Some(std::time::Duration::from_secs(2)));
+    stream
+        .set_read_timeout(Some(std::time::Duration::from_secs(2)))
+        .context("Could not set timeout on unix stream")?;
+
     stream
         .read_to_string(&mut response)
         .context("No message read")?;

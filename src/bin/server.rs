@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use async_io::Async;
 
 use stream_stuff_on_a_sozu_channel::socket::{Socket, SocketBuilder};
@@ -22,29 +22,47 @@ fn main() -> anyhow::Result<()> {
 
     let socket_path = "socket";
 
-    let socket = SocketBuilder::new()
-        .with_path(socket_path)?
-        .with_permissions(0o700)?
-        .build()?;
+    let mut socket = SocketBuilder::new()
+        .with_path(socket_path)
+        .with_permissions(0o700)
+        .nonblocking(false)
+        .build()
+        .context("Could not create the socket")?;
 
+    /*
     for unix_stream in socket.listener.incoming() {
         match unix_stream {
-            Ok(stream) => handle_stream(stream)?,
+            Ok(stream) => handle_stream(stream).context("Failed at handling the unix stream")?,
             Err(e) => {
-                bail!(format!("{}", e));
+                bail!(format!(
+                    "Error with incoming connection on the unix socket:\n    {}",
+                    e
+                ));
             }
         }
     }
+    */
 
-    println!("done");
+    loop {
+        let (unix_stream, socket_address) = socket
+            .listener
+            .accept()
+            .context("Failed at accepting a connection on the unix listener")?;
+        println!("Accepted connection. Stream: {:?}, address: {:?}", unix_stream, socket_address);
+        handle_stream(unix_stream)?;
+    }
 
     Ok(())
 }
 
 fn handle_stream(mut stream: UnixStream) -> anyhow::Result<()> {
-    println!("stream: {:?}", stream);
+    
     let mut message = String::new();
-    stream.read_to_string(&mut message)?;
+    stream
+        .read_to_string(&mut message)
+        .context("Failed at reading the unix stream")?;
+
     println!("{}", message);
     Ok(())
 }
+

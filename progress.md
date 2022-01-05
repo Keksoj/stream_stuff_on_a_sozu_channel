@@ -110,3 +110,45 @@ This prints the request on the server.
 ## Accept and deserialize a request
 
 That's the next step to greatness: once we accept a request on the server, send a bunch of responses back.
+
+```rust
+stream
+    .read_to_string(&mut message)
+    .context("Failed at reading the unix stream")?;
+
+let request = serde_json::from_str::<CommandRequest>(&message)
+    .context("could no deserialize request message")?;
+```
+
+This works.
+
+## Have the server responding and the client listening
+
+I'm trying this:
+
+-   On the server side, reading the stream and, upon reception of a request, writing to it
+-   On the client side, writing to the socket, and then listening to it
+
+I get those errors:
+
+**server side**
+
+```
+Parsed this request: CommandRequest { id: "My-urgent-request", version: 0, worker_id: None }
+
+Error: Could not write response onto the unix stream
+
+Caused by:
+    Broken pipe (os error 32)
+```
+
+**client side**
+
+```
+This request has been written : "{\"id\":\"My-urgent-request\",\"version\":0}"
+
+Error: Could not bind to the socket
+
+Caused by:
+    Address already in use (os error 98)
+```

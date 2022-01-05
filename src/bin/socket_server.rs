@@ -31,20 +31,6 @@ fn main() -> anyhow::Result<()> {
         .build()
         .context("Could not create the socket")?;
 
-    /*
-    for unix_stream in socket.listener.incoming() {
-        match unix_stream {
-            Ok(stream) => handle_stream(stream).context("Failed at handling the unix stream")?,
-            Err(e) => {
-                bail!(format!(
-                    "Error with incoming connection on the unix socket:\n    {}",
-                    e
-                ));
-            }
-        }
-    }
-    */
-
     loop {
         let (unix_stream, socket_address) = socket
             .listener

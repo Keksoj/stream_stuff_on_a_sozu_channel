@@ -3,7 +3,7 @@ use crate::copy_pasted_from_sozu::channel::Channel;
 
 use anyhow::Context;
 
-pub fn create_receiving_channel(
+pub fn create_client_channel(
     command_socket_path: &str,
     blocking: bool,
 ) -> anyhow::Result<Channel<CommandRequest, CommandResponse>> {
@@ -19,7 +19,7 @@ pub fn create_receiving_channel(
     Ok(channel)
 }
 
-pub fn create_sending_channel(
+pub fn create_server_channel(
     command_socket_path: &str,
     blocking: bool,
 ) -> anyhow::Result<Channel<CommandResponse, CommandRequest>> {

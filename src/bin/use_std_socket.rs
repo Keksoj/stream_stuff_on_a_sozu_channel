@@ -1,17 +1,12 @@
 // create, read and write on a std::os::unix::net::UnixStream instead of mio
 use std::{
-    fs::File,
     io::{Read, Write},
-    os::unix::{
-        io::AsRawFd,
-        net::{UnixListener, UnixStream},
-    },
-    path::Path,
+    os::unix::net::UnixStream,
 };
 
 use anyhow::Context;
 
-use stream_stuff_on_a_sozu_channel::socket::{Socket, SocketBuilder};
+use stream_stuff_on_a_sozu_channel::socket::SocketBuilder;
 
 fn main() -> anyhow::Result<()> {
     let path = "./socket";

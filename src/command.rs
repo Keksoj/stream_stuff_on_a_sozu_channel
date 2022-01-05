@@ -3,6 +3,8 @@
 use serde_derive::{Deserialize, Serialize};
 use serde_json;
 
+use anyhow;
+
 pub const PROTOCOL_VERSION: u8 = 0;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

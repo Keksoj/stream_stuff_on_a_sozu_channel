@@ -63,13 +63,36 @@ fn handle_stream(mut stream: UnixStream) -> anyhow::Result<()> {
 
     // send back a bunch of messages
     let response: CommandResponse = match request.id.as_str() {
-        "reply" => CommandResponse::new("response", CommandStatus::Ok, "Roger that"),
-        _ => CommandResponse::new("what", CommandStatus::Ok, "Sorry what?"),
+        "request" => CommandResponse::new("response", CommandStatus::Ok, "Roger that"),
+        _ => CommandResponse::new("what", CommandStatus::Error, "Sorry what?"),
     };
 
-    let response_as_string = response
+    // send 10 processings before sending the final one
+    for _ in 0..9 {
+        let mut processing = CommandResponse::new(
+            "processing",
+            CommandStatus::Processing,
+            "still processing...",
+        )
         .to_serialized_string()
         .context("Could not serialize response")?;
+
+        // add a newline, to separate instructions
+        processing.push('\n');
+
+        println!("Sending response: {}", processing);
+        stream
+            .write(processing.as_bytes())
+            .context("Could not write processing response onto the unix stream")?;
+
+        sleep(Duration::from_secs(1));
+    }
+
+    let mut response_as_string = response
+        .to_serialized_string()
+        .context("Could not serialize response")?;
+
+    response_as_string.push('\n');
 
     let response_as_bytes = response_as_string.as_bytes();
 

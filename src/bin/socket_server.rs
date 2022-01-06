@@ -7,12 +7,11 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{bail, Context};
-use async_io::Async;
+use anyhow::Context;
 
 use stream_stuff_on_a_sozu_channel::{
     command::{CommandRequest, CommandResponse, CommandStatus},
-    socket::{Socket, SocketBuilder},
+    socket::SocketBuilder,
 };
 /*
     channels::{create_receiving_channel, create_sending_channel},
@@ -24,7 +23,7 @@ fn main() -> anyhow::Result<()> {
 
     let socket_path = "socket";
 
-    let mut socket = SocketBuilder::new()
+    let socket = SocketBuilder::new()
         .with_path(socket_path)
         .with_permissions(0o700)
         .nonblocking(false)
@@ -61,7 +60,7 @@ fn handle_stream(mut stream: UnixStream) -> anyhow::Result<()> {
 
     println!("Parsed this request: {:?}", request);
 
-    // send back a bunch of messages
+    // create a response that matches the request
     let response: CommandResponse = match request.id.as_str() {
         "request" => CommandResponse::new("response", CommandStatus::Ok, "Roger that"),
         _ => CommandResponse::new("what", CommandStatus::Error, "Sorry what?"),

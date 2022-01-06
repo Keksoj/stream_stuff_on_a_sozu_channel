@@ -1,18 +1,12 @@
 // create a channel that talks with the server
-use std::{
-    io::{Read, Write},
-    os::unix::net::{UnixListener, UnixStream},
-    thread::sleep,
-    time::Duration,
-};
+use std::{thread::sleep, time::Duration};
 
-use anyhow::{bail, Context};
+// use anyhow::{bail, Context};
 
 use stream_stuff_on_a_sozu_channel::{
-    channels::{create_client_channel, create_server_channel},
+    channels::create_client_channel,
     command::{CommandRequest, CommandResponse, CommandStatus},
     copy_pasted_from_sozu::channel::Channel,
-    socket::{Socket, SocketBuilder},
 };
 
 fn main() -> anyhow::Result<()> {

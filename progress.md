@@ -109,8 +109,6 @@ This prints the request on the server.
 
 ## Accept and deserialize a request
 
-That's the next step to greatness: once we accept a request on the server, send a bunch of responses back.
-
 ```rust
 stream
     .read_to_string(&mut message)
@@ -152,3 +150,53 @@ Error: Could not bind to the socket
 Caused by:
     Address already in use (os error 98)
 ```
+
+This happens because I tried to create a listener on the client side, of wich there was no actual need.
+What should be done:
+
+-   On the server side,
+    -   create the socket
+    -   create a stream
+    -   read the stream
+    -   upon reception of a request, write to it
+-   On the client side,
+    -   create a stream,
+    -   write to it,
+    -   read from it
+
+This works.
+
+## Separate messages with new lines
+
+By appending a newline to each response sent by the server:
+
+```rust
+response_as_string.push('\n');
+
+let response_as_bytes = response_as_string.as_bytes();
+
+stream
+    .write(response_as_bytes)
+    .context("Could not write response onto the unix stream")?;
+```
+
+We can read messages separately on the client.
+To do that, the unix stream, that implements `Read` already, needs to be wrapped in a `std::io::BufReader`:
+
+```rust
+let mut buf_reader = BufReader::new(unix_stream);
+```
+
+And then the method `read_line()` reads the buffer until a `\n` is found.
+
+```rust
+// in a loop
+let mut message = String::new();
+    let _ = buf_reader
+        .read_line(&mut message)
+        .context("Failed at reading response line from the buffer");
+```
+
+It works pretty well.
+
+Notice all this is done an blocking socket.

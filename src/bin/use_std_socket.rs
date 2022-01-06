@@ -12,7 +12,7 @@ fn main() -> anyhow::Result<()> {
     let path = "./socket";
 
     // my custom socket builder
-    let socket = SocketBuilder::new()
+    let _socket = SocketBuilder::new()
         .with_path(path)
         .with_permissions(0o700)
         .nonblocking(true)

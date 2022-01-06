@@ -1,18 +1,14 @@
 // this is a server
 // create a unix_listener that accepts connections from client
-use std::{
-    io::{Read, Write},
-    thread::sleep,
-    time::Duration,
-};
+use std::{thread::sleep, time::Duration};
 
 use anyhow::{bail, Context};
 
 use stream_stuff_on_a_sozu_channel::{
-    channels::{create_client_channel, create_server_channel},
+    channels::create_server_channel,
     command::{CommandRequest, CommandResponse, CommandStatus},
     copy_pasted_from_sozu::channel::Channel,
-    socket::{Socket, SocketBuilder},
+    socket::SocketBuilder,
 };
 /*
     channels::{create_receiving_channel, create_sending_channel},
@@ -24,7 +20,7 @@ fn main() -> anyhow::Result<()> {
     let socket_path = "socket";
 
     // create the socket
-    let mut socket = SocketBuilder::new()
+    let mut _socket = SocketBuilder::new()
         .with_path(socket_path)
         .with_permissions(0o700)
         .nonblocking(false)

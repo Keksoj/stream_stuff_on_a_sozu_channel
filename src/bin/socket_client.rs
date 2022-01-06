@@ -1,18 +1,12 @@
-// create a UnixStream that connects to the unix_listener of the receiver (=the server)
+// create a UnixStream that connects to the socket, write on it, read from it
 use std::{
-    io::{BufRead, BufReader, Read, Write},
-    os::unix::net::{UnixListener, UnixStream},
-    thread::sleep,
-    time::Duration,
+    io::{BufRead, BufReader, Write},
+    os::unix::net::UnixStream,
 };
 
-use anyhow::{bail, Context};
+use anyhow::Context;
 
-use stream_stuff_on_a_sozu_channel::{
-    command::{CommandRequest, CommandResponse, CommandStatus},
-    copy_pasted_from_sozu::channel::Channel,
-    socket::{Socket, SocketBuilder},
-};
+use stream_stuff_on_a_sozu_channel::command::{CommandRequest, CommandResponse, CommandStatus};
 
 fn main() -> anyhow::Result<()> {
     let socket_path = "socket";
@@ -29,7 +23,7 @@ fn main() -> anyhow::Result<()> {
     loop {
         // receive a message
         let mut message = String::new();
-        buf_reader
+        let _ = buf_reader
             .read_line(&mut message)
             .context("Failed at reading response line from the buffer");
 

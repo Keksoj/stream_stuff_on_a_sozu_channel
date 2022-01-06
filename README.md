@@ -77,12 +77,19 @@ To implement the timeout, I need non-blocking channels.
 
 It turns out if we want the raw file descriptor of a file we have to use `std::os::unix::io::AsRawFd`.
 
-## How to run
+## Make a socket-based client/server
+
+In order to understand how unix sockets work and what a unix stream is, I wrote:
+
+- a small socket library to create a socket, `src/socket.rs`
+- a simple socket-based server that creates a socket, uses its listener, writes responses back
+- a simple socket-based client that connects to the socket, writes to the stream and read from it.
 
 In two separate terminals, run first:
 
-    cargo run --bin server
+    cargo run --bin socket_server
 
 and then:
 
-    cargo run --bin client
+    cargo run --bin socket_client
+

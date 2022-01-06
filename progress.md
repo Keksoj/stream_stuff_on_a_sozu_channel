@@ -1,3 +1,7 @@
+# Make a socket-based server-client
+
+Instead of taming the channels head-on, let's try and get it to work using only sockets.
+
 ## Why do I get this error every time?
 
 Even when setting socket permissions to `777`, I can't connect to it:
@@ -11,11 +15,7 @@ Caused by:
 
 It turns out the permissions had to be given in octal, so `0o600` (600 is plenty).
 
-# Work it the verbose way first
-
-Instead of taming the channels head-on, let's try and get it to work using only sockets.
-
-## Create a listener
+## Listen with `incoming()`
 
 Listening on a socket works when doing this on the server side:
 
@@ -52,7 +52,7 @@ But this is blocking. If the client sends ten messages on the socket, the `read_
 
 I tried copying Sōzu's code but its asynchronous wrapping sounds like chinese to me.
 
-Let's using the `set_nonblocking` method of `std::os::unix::net::UnixListener`.
+Let's use the `set_nonblocking` method of `std::os::unix::net::UnixListener`.
 Here is the documentation:
 
 > This will result in the `accept` operation becoming nonblocking,
@@ -61,7 +61,11 @@ Here is the documentation:
 > IO operation could not be completed and needs to be retried, an error
 > with kind [`io::ErrorKind::WouldBlock`] is returned.
 
-So I gave the SocketBuilder a nice `nonblocking(boolean)` method and… I've got mixed feelings about this. Calling the `accept()` method on a non-blocking listener yielded this error:
+## Plotwist... don't
+
+So I gave the SocketBuilder a nice `nonblocking(boolean)` method and…
+I've got mixed feelings about this.
+Calling the `accept()` method on a non-blocking listener yielded this error:
 
     Error: Failed at accepting a connection on the unix listener
     Caused by:
@@ -120,7 +124,7 @@ let request = serde_json::from_str::<CommandRequest>(&message)
 
 This works.
 
-## Have the server responding and the client listening
+## How not to send and receive the response
 
 I'm trying this:
 
@@ -151,7 +155,9 @@ Caused by:
     Address already in use (os error 98)
 ```
 
-This happens because I tried to create a listener on the client side, of wich there was no actual need.
+## The solution: don't create a listener on the client side, use the stream
+
+The errors happened because I tried to create a listener on the client side, of wich there was no actual need.
 What should be done:
 
 -   On the server side,

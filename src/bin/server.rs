@@ -1,26 +1,37 @@
-// create a channel that talks with the server
+// this is a server
+// create a unix_listener that accepts connections from client
 use std::{thread::sleep, time::Duration};
 
-// use anyhow::{bail, Context};
+use anyhow::{bail, Context};
 
 use stream_stuff_on_a_sozu_channel::{
-    channels::create_client_channel,
+    channels::create_server_channel,
     command::{CommandRequest, CommandResponse, CommandStatus},
     copy_pasted_from_sozu::channel::Channel,
+    socket::SocketBuilder,
 };
+/*
+    channels::{create_receiving_channel, create_sending_channel},
+*/
 
 fn main() -> anyhow::Result<()> {
+    println!("Hello, world!");
+
     let socket_path = "socket";
 
-    // the socket should have been create prior to this, on the server side
-    let mut sending_channel = create_client_channel(socket_path, true)?;
+    // create the socket
+    let mut _socket = SocketBuilder::new()
+        .with_path(socket_path)
+        .with_permissions(0o700)
+        .build()
+        .context("Could not create the socket")?;
 
-    // create a request
-    let request = CommandRequest::new("My-urgent-request".to_string(), None);
+    // create the channel
+    let mut receiving_channel = create_server_channel(socket_path, true)?;
 
-    // send the request with the channel
-    println!("Sending request: {:?}", request);
-    sending_channel.write_message(&request);
+    while let Some(response) = receiving_channel.read_message() {
+        println!("{:?}", response);
+    }
 
     Ok(())
 }

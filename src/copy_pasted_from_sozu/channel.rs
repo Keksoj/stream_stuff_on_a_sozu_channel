@@ -1,24 +1,26 @@
 // This is Sōzu's code as of the 0.14 dev branch (2021-12-29)
 // but the error! has been replaced with println! for convenience
-use mio::event::Source;
-use mio::net::UnixStream;
-use serde::de::DeserializeOwned;
-use serde::ser::Serialize;
-use serde_json;
-use std::cmp::min;
-use std::fmt::Debug;
-use std::io::{self, ErrorKind, Read, Write};
-use std::iter::Iterator;
-use std::marker::PhantomData;
-use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
-use std::os::unix::net;
-use std::str::from_utf8;
-use std::time::Duration;
-use anyhow::Context;
+use std::{
+    cmp::min,
+    fmt::Debug,
+    io::{self, ErrorKind, Read, Write},
+    iter::Iterator,
+    marker::PhantomData,
+    os::unix::{
+        self,
+        io::{AsRawFd, FromRawFd, IntoRawFd, RawFd},
+        net,
+    },
+    str::from_utf8,
+    time::Duration,
+};
 
-// added ::copy_pasted_from_sozu here
-use crate::copy_pasted_from_sozu::buffer::growable::Buffer;
-use crate::copy_pasted_from_sozu::ready::Ready;
+use anyhow::Context;
+use mio::{event::Source, net::UnixStream};
+use serde::{de::DeserializeOwned, ser::Serialize};
+use serde_json;
+
+use crate::copy_pasted_from_sozu::{buffer::growable::Buffer, ready::Ready};
 
 #[derive(Debug, PartialEq)]
 pub enum ConnError {
@@ -26,7 +28,6 @@ pub enum ConnError {
     ParseError,
     SocketError,
 }
-
 
 pub struct Channel<Tx, Rx> {
     pub sock: UnixStream,
@@ -47,8 +48,8 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
         max_buffer_size: usize,
     ) -> Result<Channel<Tx, Rx>, io::Error> {
         UnixStream::connect(path)
-        // .context("Can not connect to unix socket")
-        .map(|stream| Channel::new(stream, buffer_size, max_buffer_size))
+            // .context("Can not connect to unix socket")
+            .map(|stream| Channel::new(stream, buffer_size, max_buffer_size))
     }
 
     pub fn new(sock: UnixStream, buffer_size: usize, max_buffer_size: usize) -> Channel<Tx, Rx> {
@@ -79,13 +80,33 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
         }
     }
 
+    // this uses the standard lib's UnixStream
     pub fn set_nonblocking(&mut self, nonblocking: bool) {
         unsafe {
+            // get the raw file descriptor of the channel's socket
             let fd = self.sock.as_raw_fd();
-            let stream = net::UnixStream::from_raw_fd(fd);
+
+            // create a unixstream from this raw file descriptor, essentially wrapping it
+            // THIS IS UNSAFE
+            // this consumes the file descriptor
+            let stream = unix::net::UnixStream::from_raw_fd(fd);
+
+            // the standard library does unix magic by wrapping the libc:
+            // unsafe {
+            //     let v = nonblocking as c_int;
+            //     cvt(libc::ioctl(self.as_raw_fd(), libc::FIONBIO, &v))?;
+            //     Ok(())
+            // }
+            // it unsafe but wrapped into a result so we can map the error
             let _ = stream.set_nonblocking(nonblocking).map_err(|e| {
-                println!("error: could not change blocking status for stream: {:?}", e);
+                println!(
+                    "error: could not change blocking status for stream: {:?}",
+                    e
+                );
             });
+
+            // recreate the file descriptor from the socket we changed.
+            // but why is it unused then?
             let _fd = stream.into_raw_fd();
         }
         self.blocking = !nonblocking;
@@ -107,6 +128,7 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
         self.readiness & self.interest
     }
 
+    // this is used in sozu_lib only
     pub fn run(&mut self) {
         let interest = self.interest & self.readiness;
 
@@ -226,7 +248,10 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
             if let Ok(s) = from_utf8(&self.front_buf.data()[..pos]) {
                 match serde_json::from_str(s) {
                     Ok(message) => res = Some(message),
-                    Err(e) => println!("error: could not parse message (error={:?}), ignoring:\n{}", e, s),
+                    Err(e) => println!(
+                        "error: could not parse message (error={:?}), ignoring:\n{}",
+                        e, s
+                    ),
                 }
             } else {
                 println!("error: invalid utf-8 encoding in command message, ignoring");
@@ -268,7 +293,10 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
                     match serde_json::from_str(s) {
                         Ok(message) => res = Some(message),
                         Err(e) => {
-                            println!("error: could not parse message (error={:?}), ignoring:\n{}", e, s)
+                            println!(
+                                "error: could not parse message (error={:?}), ignoring:\n{}",
+                                e, s
+                            )
                         }
                     }
                 } else {

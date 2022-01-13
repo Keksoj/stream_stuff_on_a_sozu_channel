@@ -29,6 +29,7 @@ pub enum ConnError {
     SocketError,
 }
 
+#[derive(Debug)]
 pub struct Channel<Tx, Rx> {
     pub sock: UnixStream,
     front_buf: Buffer,
@@ -46,10 +47,10 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
         path: &str,
         buffer_size: usize,
         max_buffer_size: usize,
-    ) -> Result<Channel<Tx, Rx>, io::Error> {
-        UnixStream::connect(path)
-            // .context("Can not connect to unix socket")
-            .map(|stream| Channel::new(stream, buffer_size, max_buffer_size))
+    ) -> anyhow::Result<Channel<Tx, Rx>> {
+        let unix_stream = UnixStream::connect(path).context("Can not connect to unix socket")?;
+        let channel = Channel::new(unix_stream, buffer_size, max_buffer_size);
+        Ok(channel)
     }
 
     pub fn new(sock: UnixStream, buffer_size: usize, max_buffer_size: usize) -> Channel<Tx, Rx> {
@@ -110,6 +111,13 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
             let _fd = stream.into_raw_fd();
         }
         self.blocking = !nonblocking;
+        println!(
+            "Set channel to {}",
+            match self.blocking {
+                true => "blocking",
+                false => "nonblocking",
+            }
+        );
     }
 
     pub fn set_blocking(&mut self, blocking: bool) {
@@ -162,7 +170,7 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
                 Ok(0) => {
                     self.interest = Ready::empty();
                     self.readiness.remove(Ready::readable());
-                    //println!("error: read() returned 0 (count={})", count);
+                    println!("error: read() returned 0 (count={})", count);
                     self.readiness.insert(Ready::hup());
                     return Err(ConnError::SocketError);
                 }
@@ -235,8 +243,10 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
 
     pub fn read_message(&mut self) -> Option<Rx> {
         if self.blocking {
+            println!("reading blocking");
             self.read_message_blocking()
         } else {
+            println!("reading nonblocking");
             self.read_message_nonblocking()
         }
     }
@@ -245,7 +255,11 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
         if let Some(pos) = self.front_buf.data().iter().position(|&x| x == 0) {
             let mut res = None;
 
+            println!("Reading buffer, converting to utf8");
+
             if let Ok(s) = from_utf8(&self.front_buf.data()[..pos]) {
+                println!("parsing utf8 to json");
+
                 match serde_json::from_str(s) {
                     Ok(message) => res = Some(message),
                     Err(e) => println!(
@@ -279,17 +293,23 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
     }
 
     pub fn read_message_blocking_timeout(&mut self, timeout: Option<Duration>) -> Option<Rx> {
+        println!("timeout: {:?}", timeout);
+
         let now = std::time::Instant::now();
 
         loop {
+            println!("start reading loop");
             if timeout.is_some() && now.elapsed() >= timeout.unwrap() {
+                println!("time is out!");
                 return None;
             }
 
             if let Some(pos) = self.front_buf.data().iter().position(|&x| x == 0) {
                 let mut res = None;
+                println!("Reading buffer, converting to utf8");
 
                 if let Ok(s) = from_utf8(&self.front_buf.data()[..pos]) {
+                    println!("parsing utf8 to json");
                     match serde_json::from_str(s) {
                         Ok(message) => res = Some(message),
                         Err(e) => {
@@ -306,6 +326,7 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
                 self.front_buf.consume(pos + 1);
                 return res;
             } else {
+                println!("Reading but not from the buffer, from the socket, blocking it");
                 if self.front_buf.available_space() == 0 {
                     if self.front_buf.capacity() == self.max_buffer_size {
                         println!("error: command buffer full, cannot grow more, ignoring");
@@ -316,14 +337,25 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
                     }
                 }
 
-                match self.sock.read(self.front_buf.space()) {
+                println!("Reading from the unix stream into the channel buffer");
+                match self
+                    .sock
+                    // things are blocking here!
+                    .read(self.front_buf.space())
+                {
                     Ok(0) => {
+                        println!("Nothing to read");
                         return None;
                     }
-                    Err(_) => {
+                    Err(e) => {
+                        println!("Something went wrong: {}", e);
                         return None;
                     }
                     Ok(r) => {
+                        println!(
+                            "Read {} bytes, filling the front buffer with just as many",
+                            r
+                        );
                         self.front_buf.fill(r);
                     }
                 };
@@ -333,23 +365,29 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
 
     pub fn write_message(&mut self, message: &Tx) -> bool {
         if self.blocking {
+            println!("Writing message, blocking");
             self.write_message_blocking(message)
         } else {
+            println!("Writing message, nonblocking");
             self.write_message_nonblocking(message)
         }
     }
 
     pub fn write_message_nonblocking(&mut self, message: &Tx) -> bool {
+        println!("converting to bytes");
         let message = &serde_json::to_string(message)
             .map(|s| s.into_bytes())
             .unwrap_or_else(|_| Vec::new());
 
         let msg_len = message.len() + 1;
+
         if msg_len > self.back_buf.available_space() {
+            println!("shifting the back buffer");
             self.back_buf.shift();
         }
 
         if msg_len > self.back_buf.available_space() {
+            println!("the message seem to be longer than the buffer's available space");
             if msg_len - self.back_buf.available_space() + self.back_buf.capacity()
                 > self.max_buffer_size
             {
@@ -360,33 +398,42 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
             let new_len = msg_len - self.back_buf.available_space() + self.back_buf.capacity();
             self.back_buf.grow(new_len);
         }
+        println!("writing on the back buffer...");
 
         if let Err(e) = self.back_buf.write(message) {
             println!("error: channel could not write to back buffer: {:?}", e);
             return false;
         }
 
+        println!("writing a zero byte on the back buffer...");
         if let Err(e) = self.back_buf.write(&b"\0"[..]) {
             println!("error: channel could not write to back buffer: {:?}", e);
             return false;
         }
 
+        println!("setting channel interest to writable");
         self.interest.insert(Ready::writable());
 
         true
     }
 
     pub fn write_message_blocking(&mut self, message: &Tx) -> bool {
+        println!("converting to bytes");
+
         let message = &serde_json::to_string(message)
             .map(|s| s.into_bytes())
             .unwrap_or_else(|_| Vec::new());
 
         let msg_len = message.len() + 1;
         if msg_len > self.back_buf.available_space() {
+            println!("shifting the back buffer");
+
             self.back_buf.shift();
         }
 
         if msg_len > self.back_buf.available_space() {
+            println!("the message seem to be longer than the buffer's available space");
+
             if msg_len - self.back_buf.available_space() + self.back_buf.capacity()
                 > self.max_buffer_size
             {
@@ -397,11 +444,13 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
             let new_len = msg_len - self.back_buf.available_space() + self.back_buf.capacity();
             self.back_buf.grow(new_len);
         }
+        println!("writing on the back buffer...");
 
         if let Err(e) = self.back_buf.write(message) {
             println!("error: channel could not write to back buffer: {:?}", e);
             return false;
         }
+        println!("writing a zero byte on the back buffer...");
 
         if let Err(e) = self.back_buf.write(&b"\0"[..]) {
             println!("error: channel could not write to back buffer: {:?}", e);
@@ -409,19 +458,26 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
         }
 
         loop {
+            println!("Assessing the available data on the buffer...");
             let size = self.back_buf.available_data();
             if size == 0 {
+                println!("no available space, we're done here");
                 break;
             }
 
+            println!("writing the buffer data onto the socket");
             match self.sock.write(self.back_buf.data()) {
                 Ok(0) => {
+                    println!("No bytes were written :-(");
                     return false;
                 }
                 Ok(r) => {
+                    println!("Wrote {} bytes", r);
                     self.back_buf.consume(r);
                 }
-                Err(_) => {
+                Err(error) => {
+                    println!("write error: {}", error);
+                    // wait wait wait, shouldn't this return fals?
                     return true;
                 }
             }

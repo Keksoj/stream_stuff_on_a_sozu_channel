@@ -70,3 +70,13 @@ while Some(message) = channel.read_message_with_timeout(Duration::from_secs(2)) 
 ```
 
 To implement the timeout, I need non-blocking channels.
+
+## Client/server
+
+The client sends a request, the server is _supposed_ to receive it. Run first:
+
+    cargo run --bin server
+
+and then, in a separate terminal:
+
+    cargo run --bin client

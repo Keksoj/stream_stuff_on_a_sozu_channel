@@ -77,6 +77,16 @@ The client sends a request, the server is _supposed_ to receive it. Run first:
 
     cargo run --bin server
 
-and then, in a separate terminal:
+You may listen to what happens on the created socket by using netcat in another terminal:
+
+    netcat -lkU socket
+
+and then, in a third terminal:
 
     cargo run --bin client
+
+## Readiness
+
+What is this `Ready` thing? What are those binary operators doing? Let's find out.
+
+    cargo run --bin ready

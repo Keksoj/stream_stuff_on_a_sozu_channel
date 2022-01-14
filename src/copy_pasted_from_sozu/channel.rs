@@ -112,7 +112,7 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
         }
         self.blocking = !nonblocking;
         println!(
-            "Set channel to {}",
+            "Set channel to {}\n",
             match self.blocking {
                 true => "blocking",
                 false => "nonblocking",
@@ -274,15 +274,20 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
             self.front_buf.consume(pos + 1);
             res
         } else {
+            println!("checking available space on the front buffer");
             if self.front_buf.available_space() == 0 {
                 if self.front_buf.capacity() == self.max_buffer_size {
-                    println!("error: command buffer full, cannot grow more, ignoring");
+                    println!("error: command buffer full, cannot grow more, ignoring...");
                 } else {
+                    println!("growing the buffer...");
                     let new_size = min(self.front_buf.capacity() + 5000, self.max_buffer_size);
                     self.front_buf.grow(new_size);
                 }
+            } else {
+                println!("there is enough space in the front buffer");
             }
 
+            println!("setting channel interest to readable");
             self.interest.insert(Ready::readable());
             None
         }
@@ -297,13 +302,14 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
 
         let now = std::time::Instant::now();
 
+        println!("\nREADING LOOP");
         loop {
-            println!("start reading loop");
             if timeout.is_some() && now.elapsed() >= timeout.unwrap() {
                 println!("time is out!");
                 return None;
             }
 
+            // either the buffer has data and we parse it,
             if let Some(pos) = self.front_buf.data().iter().position(|&x| x == 0) {
                 let mut res = None;
                 println!("Reading buffer, converting to utf8");
@@ -325,23 +331,33 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
 
                 self.front_buf.consume(pos + 1);
                 return res;
-            } else {
-                println!("Reading but not from the buffer, from the socket, blocking it");
+            }
+            // or we fill the buffer by reading from the socket
+            // so that on the next loop iteration there will be data on the buffer
+            else {
+                println!("\nFILLING THE BUFFER");
                 if self.front_buf.available_space() == 0 {
+                    println!("no space available in the front buffer");
                     if self.front_buf.capacity() == self.max_buffer_size {
                         println!("error: command buffer full, cannot grow more, ignoring");
                         return None;
                     } else {
+                        println!("growing the command buffer");
                         let new_size = min(self.front_buf.capacity() + 5000, self.max_buffer_size);
                         self.front_buf.grow(new_size);
                     }
                 }
 
-                println!("Reading from the unix stream into the channel buffer");
+                let available_front_buffer_space = self.front_buf.space();
+                println!(
+                    "The front buffer has {} bytes of memory to write into",
+                    available_front_buffer_space.len()
+                );
+                println!("Reading from the unix stream into the front buffer...");
                 match self
                     .sock
                     // things are blocking here!
-                    .read(self.front_buf.space())
+                    .read(available_front_buffer_space)
                 {
                     Ok(0) => {
                         println!("Nothing to read");
@@ -444,6 +460,8 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
             let new_len = msg_len - self.back_buf.available_space() + self.back_buf.capacity();
             self.back_buf.grow(new_len);
         }
+
+        println!("\nWRITING ON THE BUFFER");
         println!("writing on the back buffer...");
 
         if let Err(e) = self.back_buf.write(message) {
@@ -457,11 +475,12 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
             return false;
         }
 
+        println!("\nWRITING ON THE SOCKET");
         loop {
             println!("Assessing the available data on the buffer...");
             let size = self.back_buf.available_data();
             if size == 0 {
-                println!("no available space, we're done here");
+                println!("the back buffer is empty, we're done here");
                 break;
             }
 
@@ -477,7 +496,7 @@ impl<Tx: Debug + Serialize, Rx: Debug + DeserializeOwned> Channel<Tx, Rx> {
                 }
                 Err(error) => {
                     println!("write error: {}", error);
-                    // wait wait wait, shouldn't this return fals?
+                    // wait wait wait, shouldn't this return false?
                     return true;
                 }
             }

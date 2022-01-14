@@ -137,6 +137,13 @@ impl fmt::Debug for Ready {
     }
 }
 
+impl std::fmt::Binary for Ready {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        let val = self.0;
+        fmt::Binary::fmt(&val, f)
+    }
+}
+
 impl std::convert::From<mio::Interest> for Ready {
     fn from(i: mio::Interest) -> Self {
         let mut r = Ready::empty();

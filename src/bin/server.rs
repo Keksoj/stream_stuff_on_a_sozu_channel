@@ -29,12 +29,13 @@ fn main() -> anyhow::Result<()> {
     // create the channel
     let mut receiving_channel = create_server_channel(socket_path, true)?;
 
-    let size = match receiving_channel.readable() {
-        Ok(size) => size,
-        Err(connection_error) => bail!(format!("Connection error: {:?}", connection_error)),
-    };
+    // this doesn't do much 
+    // let size = match receiving_channel.readable() {
+    //     Ok(size) => size,
+    //     Err(connection_error) => bail!(format!("Connection error: {:?}", connection_error)),
+    // };
+    // println!("Reading {} bytes on the channel", size);
 
-    println!("Reading {} bytes on the channel", size);
 
     loop {
         while let Some(response) = receiving_channel.read_message() {

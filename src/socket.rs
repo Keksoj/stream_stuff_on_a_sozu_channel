@@ -5,6 +5,7 @@ use std::{
     os::unix::{
         fs::PermissionsExt,
         io::{AsRawFd, RawFd},
+        // net::{SocketAddr, UnixListener, UnixStream},
     },
 };
 
@@ -26,7 +27,7 @@ impl Socket {
 
     pub fn accept_connection(&self) -> anyhow::Result<(UnixStream, SocketAddr)> {
         self.listener.accept().context(format!(
-            "Could not accept connection on socket {}",
+            "Could not accept connection on socket `{}`",
             self.path
         ))
     }
